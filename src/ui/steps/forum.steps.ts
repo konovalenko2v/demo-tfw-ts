@@ -2,7 +2,7 @@ import { Page, expect, test } from '@playwright/test';
 import { PracticeFormPage } from '../pages/practice-form.page';
 
 export class ForumSteps {
-  private readonly formPage: PracticeFormPage;
+  readonly formPage: PracticeFormPage;
 
   constructor(page: Page) {
     this.formPage = new PracticeFormPage(page);
@@ -41,8 +41,8 @@ export class ForumSteps {
 
   async verifySuccessModal() {
     await test.step('Verify the success modal is shown', async () => {
-      await expect(this.formPage.isModalVisible()).resolves.toBe(true);
-      await expect(this.formPage.getModalTitleText()).resolves.toBe('Thanks for submitting the form');
+      await expect(this.formPage.modalTitle).toBeVisible();
+      await expect(this.formPage.modalTitle).toHaveText('Thanks for submitting the form');
     });
   }
 }

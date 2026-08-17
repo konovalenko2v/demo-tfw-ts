@@ -5,9 +5,6 @@ import * as bookingData from '../../src/api/data/booking.data';
 import { getAuthToken } from '../../src/api/auth/token.provider';
 import { CreateBookingResponse } from '../../src/api/types/booking';
 
-// beforeAll/afterAll run outside any worker-scoped test, so they get their
-// own request context instead of reusing the { request } fixture, which
-// Playwright disposes between tests and refuses to reuse across hooks.
 test.describe('Restful Booker API @ Booking CRUD', () => {
   let fixtureContext: APIRequestContext;
   let fixtureClient: BookingClient;

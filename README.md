@@ -1,13 +1,13 @@
-# QA Automation Test Suite (TypeScript + Playwright)
+# demo-tfw-ts
 
-TS/Playwright-порт [flamingo](../flamingo) — автотесты для REST API [Restful
-Booker](https://restful-booker.herokuapp.com), GraphQL API [Hygraph](https://hygraph.com) (демо-схема Ecommerce) и
-UI-формы [DemoQA](https://demoqa.com/automation-practice-form).
+TypeScript + Playwright test suite for the REST API [Restful
+Booker](https://restful-booker.herokuapp.com), the GraphQL API [Hygraph](https://hygraph.com) (Ecommerce demo
+schema), and the [DemoQA](https://demoqa.com/automation-practice-form) UI form.
 
 ## Prerequisites
 
 - Node.js 18+
-- Chrome/Chromium (ставится через `npx playwright install`)
+- Chrome/Chromium (installed via `npx playwright install`)
 
 ## How to Run
 
@@ -28,29 +28,29 @@ npm run test:ui
 npm run test:graphql
 ```
 
-API/UI/GraphQL тесты разделены через Playwright `projects` (`playwright.config.ts`), поэтому `--project=<name>` работает
-из коробки без дополнительных обвязок.
+API/UI/GraphQL tests are split via Playwright `projects` (`playwright.config.ts`), so `--project=<name>` works out of
+the box with no extra wiring.
 
-Учётные данные для `/auth` передаются через переменные окружения (`.env`, см. `.env.example`):
+Credentials for `/auth` are passed via environment variables (`.env`, see `.env.example`):
 
 ```bash
 BOOKER_USERNAME=admin USER_PASSWORD=password123 npm test
 ```
 
-Без переменной тест падает с внятным сообщением `Test Run Error! Please check env variable ...`, а не тихим fallback —
-так подмена кредов не проходит незамеченной.
+Without the variable, the test fails with a clear `Test Run Error! Please check env variable ...` message instead of
+a silent fallback — so a credential swap never goes unnoticed.
 
-## Структура проекта
+## Project Structure
 
 ```
 src/
-├── core/            конфиг (host/креды), FileUtil-аналог для чтения GQL-файлов
+├── core/            config (host/credentials), a FileUtil-style helper for reading GQL files
 ├── api/
-│   ├── clients/      AuthClient, BookingClient — тонкие обёртки над эндпоинтами (APIRequestContext)
-│   ├── types/         Booking, CreateBookingResponse, AuthRequest/Response — интерфейсы, wire-имена полей как есть
-│   ├── steps/         AuthSteps, BookingSteps — test.step()-обёртки для отчёта
-│   ├── data/           booking.data.ts — билдеры тестовых данных на @faker-js/faker
-│   └── auth/           token.provider.ts — ленивый кешируемый токен
+│   ├── clients/      AuthClient, BookingClient — thin wrappers over the endpoints (APIRequestContext)
+│   ├── types/         Booking, CreateBookingResponse, AuthRequest/Response — interfaces, wire field names as-is
+│   ├── steps/         AuthSteps, BookingSteps — test.step() wrappers for the report
+│   ├── data/           booking.data.ts — test data builders on @faker-js/faker
+│   └── auth/           token.provider.ts — a lazily cached token
 ├── graphql/           GraphQlClient (Hygraph)
 └── ui/                 PracticeFormPage, ForumSteps (Playwright Page)
 tests/
@@ -58,66 +58,65 @@ tests/
 ├── graphql/            positive.spec.ts, negative.spec.ts
 └── ui/                 forum.spec.ts
 resources/
-├── GQL/                тестовые GraphQL-запросы (*.json)
-└── files/              upload-test.txt для UI-теста
+├── GQL/                test GraphQL queries (*.json)
+└── files/              upload-test.txt for the UI test
 ```
 
-## Покрытие эндпоинтов (REST)
+## Endpoint Coverage (REST)
 
-| Эндпоинт               | Что проверяется                                                                                                                                  |
-|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| `POST /auth`           | успешная и неуспешная (неверные credentials, пустые поля) аутентификация; в негативных случаях статус остаётся 200, ошибка передаётся в `reason` |
-| `GET /ping`            | доступность сервиса (201)                                                                                                                        |
-| `GET /booking`         | список бронирований, фильтрация по `firstname`/`lastname`/`checkin`/`checkout`                                                                   |
-| `GET /booking/{id}`    | существующий id (200) и несуществующий id (404)                                                                                                  |
-| `POST /booking`        | создание, валидация тела ответа, пустое тело, unicode/спецсимволы, отрицательный `totalprice`, невалидные типы полей                             |
-| `PUT /booking/{id}`    | полное обновление с токеном (Cookie `token`), без токена (403), с невалидным токеном (403)                                                       |
-| `PATCH /booking/{id}`  | частичное обновление                                                                                                                             |
-| `DELETE /booking/{id}` | с токеном (201), без токена (403), с невалидным токеном (403)                                                                                    |
+| Endpoint                | What's covered                                                                                                                              |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `POST /auth`           | successful and unsuccessful (invalid credentials, empty fields) authentication; on failure the status stays 200, the error is in `reason`     |
+| `GET /ping`            | service availability (201)                                                                                                                    |
+| `GET /booking`         | booking list, filtering by `firstname`/`lastname`/`checkin`/`checkout`                                                                        |
+| `GET /booking/{id}`    | existing id (200) and non-existent id (404)                                                                                                   |
+| `POST /booking`        | creation, response body validation, empty body, unicode/special characters, negative `totalprice`, invalid field types                       |
+| `PUT /booking/{id}`    | full update with a token (Cookie `token`), without a token (403), with an invalid token (403)                                                 |
+| `PATCH /booking/{id}`  | partial update                                                                                                                                 |
+| `DELETE /booking/{id}` | with a token (201), without a token (403), with an invalid token (403)                                                                        |
 
-Токен аутентификации передаётся во всех защищённых запросах через **Cookie `token`**, не через `Authorization: Bearer`.
+The auth token is passed on every protected request via **Cookie `token`**, not `Authorization: Bearer`.
 
-`booking-crud.spec.ts` использует общий фикстурный booking (`beforeAll`/`afterAll`) и подчищает все созданные
-бронирования через отдельный `APIRequestContext`, созданный вручную (`playwrightRequest.newContext()`), а не через
-worker-scoped `{ request }` фикстуру — Playwright не даёт переиспользовать фикстуру теста внутри `afterAll`.
-`negative.spec.ts` очищает созданные бронирования после каждого теста через `afterEach`.
+`booking-crud.spec.ts` uses a shared fixture booking (`beforeAll`/`afterAll`) and cleans up every booking it created
+through a separate `APIRequestContext` created manually (`playwrightRequest.newContext()`) rather than the
+worker-scoped `{ request }` fixture — Playwright doesn't allow reusing a test fixture inside `afterAll`.
+`negative.spec.ts` cleans up its created bookings after each test via `afterEach`.
 
-## GraphQL и UI
+## GraphQL and UI
 
-- `positive.spec.ts`/`negative.spec.ts` (graphql) гоняют запросы к публичной demo-схеме Hygraph (пагинация, вложенные
-  поля, невалидные запросы) — тестовые query лежат в `resources/GQL/*.json`.
-- `forum.spec.ts` — сквозной сценарий заполнения и отправки формы DemoQA через Playwright (headless по умолчанию).
+- `positive.spec.ts`/`negative.spec.ts` (graphql) run queries against the public Hygraph demo schema (pagination,
+  nested fields, invalid queries) — test queries live in `resources/GQL/*.json`.
+- `forum.spec.ts` — an end-to-end scenario filling out and submitting the DemoQA form via Playwright (headless by
+  default).
 
 ## Test Strategy
 
-Тесты разделены по интерфейсу (`api`/`graphql`/`ui`) через отдельные Playwright `projects`, а не свалены в один
-пакет — это позволяет гонять их независимо и не тянуть браузер туда, где нужен только HTTP. Внутри `api` выделены три
-слоя: `clients` (голый HTTP через `APIRequestContext`), `steps` (`test.step()`-обёртки для отчёта), `tests` (сценарии
-и ассерты).
+Tests are split by interface (`api`/`graphql`/`ui`) via separate Playwright `projects` rather than lumped into one
+package — this lets them run independently and keeps the browser out of runs that only need HTTP. Inside `api`,
+three layers are separated: `clients` (bare HTTP via `APIRequestContext`), `steps` (`test.step()` wrappers for the
+report), `tests` (scenarios and assertions).
 
-Для авторизации выбран ленивый кешируемый токен (`token.provider.ts`) вместо получения токена в module-level коде на
-каждый прогон — токен запрашивается один раз за прогон и только когда он реально нужен.
+Authorization uses a lazily cached token (`token.provider.ts`) instead of fetching a token in module-level code on
+every run — the token is requested once per run, and only when it's actually needed.
 
-`api` и `graphql` проекты запускаются с `workers: 1` — оба внешних сервиса (Heroku-приложение restful-booker и
-демо-CDN Hygraph) отдают `429 Too Many Requests` под параллельной нагрузкой в несколько воркеров; `ui` проект остаётся
-параллельным.
+The `api` and `graphql` projects run with `fullyParallel: false` — tests within a single file run sequentially
+rather than in parallel, because both external services (the restful-booker Heroku app and the Hygraph demo CDN)
+return `429 Too Many Requests` under aggressive parallel load; the `ui` project stays fully parallel.
 
-## Отличия от Java-версии (flamingo)
+## Coverage Notes
 
-- Намеренно не портирован `submitPracticeFormShowsSuccessModal2` — в Java-сьюте это тест-заглушка, спроектированная
-  падать на первой попытке (`retries.incrementAndGet() % 2 == 0`), чтобы показать retry-вкладку в Allure. Порт
-  сломал бы гарантию "все тесты зелёные", а сам Java README называет его будущим долгом на удаление.
-  `.github/workflows/regression.yml` под Node/Playwright.
-- `data: null` в GraphQL-ответах на ошибку валидации — реальное поведение Hygraph API (проверено `curl`), поэтому
-  ассерт `expect(body.data).toBeNull()`, а не `toBeUndefined()`.
+- There is deliberately no stub test designed to fail on its first attempt just to populate a retry tab in the
+  report — that would break the "all tests green" guarantee without adding real coverage value.
+- `data: null` in GraphQL error-validation responses is real Hygraph API behavior (verified with `curl`), hence the
+  assertion `expect(body.data).toBeNull()` rather than `toBeUndefined()`.
 
 ## Reports
 
-Playwright собирает встроенный HTML-отчёт и `allure-playwright` результаты одновременно:
+Playwright collects its built-in HTML report and `allure-playwright` results at the same time:
 
 ```bash
 npm test
-npm run report            # открыть Playwright HTML report
-npm run allure:generate   # собрать статический Allure-отчёт из allure-results/
-npm run allure:serve      # собрать и сразу открыть Allure-отчёт (требует Allure CLI)
+npm run report            # open the Playwright HTML report
+npm run allure:generate   # build a static Allure report from allure-results/
+npm run allure:serve      # build and immediately open the Allure report (requires the Allure CLI)
 ```

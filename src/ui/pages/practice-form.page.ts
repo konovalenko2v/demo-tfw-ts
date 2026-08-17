@@ -1,8 +1,12 @@
-import { Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { config } from '../../core/config';
 
 export class PracticeFormPage {
-  constructor(private readonly page: Page) {}
+  readonly modalTitle: Locator;
+
+  constructor(private readonly page: Page) {
+    this.modalTitle = page.locator('#example-modal-sizes-title-lg');
+  }
 
   async navigate() {
     await this.page.route(/doubleclick|googlesyndication|adsbygoogle/, (route) => route.abort());
@@ -48,11 +52,4 @@ export class PracticeFormPage {
     await submitButton.click();
   }
 
-  async isModalVisible(): Promise<boolean> {
-    return this.page.locator('#example-modal-sizes-title-lg').isVisible();
-  }
-
-  async getModalTitleText(): Promise<string | null> {
-    return this.page.locator('#example-modal-sizes-title-lg').textContent();
-  }
 }

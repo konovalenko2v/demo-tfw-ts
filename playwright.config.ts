@@ -18,16 +18,12 @@ export default defineConfig({
     {
       name: 'api',
       testDir: './tests/api',
-      // restful-booker.herokuapp.com rate-limits aggressive parallel bursts
       fullyParallel: false,
-      workers: 1,
     },
     {
       name: 'graphql',
       testDir: './tests/graphql',
-      // Hygraph demo CDN endpoint returns 429 under parallel load
       fullyParallel: false,
-      workers: 1,
     },
     {
       name: 'ui',

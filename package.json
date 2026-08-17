@@ -1,5 +1,5 @@
 {
-  "name": "flamingo-ts",
+  "name": "demo-tfw-ts",
   "version": "1.0.0",
   "private": true,
   "description": "QA automation suite: REST, GraphQL and UI test coverage (TypeScript + Playwright)",
