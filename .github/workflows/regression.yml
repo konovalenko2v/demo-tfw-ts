@@ -1,4 +1,5 @@
 name: Regression
+run-name: Regression #${{ github.run_number }}
 
 on:
   push:
